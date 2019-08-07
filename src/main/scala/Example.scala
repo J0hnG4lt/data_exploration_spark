@@ -2,9 +2,14 @@
 * This module implements simple data exploration methods
 */
 
+import org.apache.spark.mllib.stat.MultivariateStatisticalSummary
 import org.apache.spark.sql.functions.{to_date, asc, desc}
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.mllib.stat.Statistics
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.ml.Pipeline
+
 //import vegas._
 //import vegas.render.WindowRenderer._
 
@@ -12,12 +17,21 @@ import org.apache.spark.sql.SQLContext
 
 object SparkApp {
 
+  private def loadSparkSession() : SparkSession = {
+    val spark = SparkSession.builder
+    .appName("SparkAppAmazonReviews") 
+    .master("local") 
+    .config("spark.network.timeout", "800")
+    .getOrCreate()
+    return spark
+  }
+
   private def loadSparkContext() : SparkContext = {
     //Create a SparkContext to initialize Spark
     val conf = new SparkConf()
-    conf.setMaster("local")
+    conf.setMaster("localhost:7077")
     conf.setAppName("SparkAppAmazonReviews")
-    //conf.set("spark.network.timeout", 800)
+    conf.set("spark.network.timeout", "800")
     val sc = new SparkContext(conf)
     return sc
   }
@@ -27,8 +41,8 @@ object SparkApp {
   }
 
   def main(args: Array[String]): Unit = {
-    val sc = loadSparkContext()
-    val sqlContext = loadSqlContext(sc)
+    val spark = loadSparkSession()
+    
     val fileName = args(0)
     println(fileName)
 
@@ -42,7 +56,7 @@ object SparkApp {
 
     // Columns :
     // Product_Code | Warehouse | Product_Category | Date | Order_Demand
-    var df = sqlContext.read.format("csv")
+    var df = spark.read.format("csv")
       .option("header", "true")
       .option("treatEmptyValuesAsNulls", "true")
       .option("mode", "DROPMALFORMED")
@@ -72,7 +86,7 @@ object SparkApp {
       .show()
 
     // Closing Spark contexts
-    sc.stop()
+    spark.stop()
     //sqlContext.stop()
 
   } 
